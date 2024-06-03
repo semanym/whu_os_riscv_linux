@@ -9,6 +9,8 @@
 #include "riscv.h"
 #include "defs.h"
 
+#define HEAP_SIZE 16*1024*1024
+
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
@@ -27,7 +29,11 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)PHYSTOP);
+    void *heap_start = (void*)(PHYSTOP - HEAP_SIZE);
+    freerange(end, heap_start);
+    // Initialize the new heap
+    heap_init(heap_start, HEAP_SIZE);
+  //freerange(end, (void*)PHYSTOP);
 }
 
 void
@@ -80,3 +86,85 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+
+
+struct heap_block {
+    int size;
+    int free;
+    struct heap_block *next;
+
+};
+
+struct {
+    struct spinlock lock;
+    struct heap_block *free_list;
+} heap;
+
+void heap_init(void *heap_start, int size) {
+    initlock(&heap.lock, "heap");
+    heap.free_list = (struct heap_block*)heap_start;
+    heap.free_list->size = size - sizeof(struct heap_block);
+    heap.free_list->next = 0;
+    heap.free_list->free = 1;
+}
+
+
+void *malloc(int size) {
+    struct heap_block *curr;
+    void *result = 0;
+
+    acquire(&heap.lock);
+
+    for (curr = heap.free_list; curr != 0; curr = curr->next) {
+        if (curr->free && curr->size >= size + sizeof(struct heap_block)) {
+
+                if(curr->size - size - sizeof(struct heap_block) != 0){
+                  struct heap_block *new_block = (struct heap_block*)((char*)curr + sizeof(struct heap_block) + size);
+                  new_block->size = curr->size - size - sizeof(struct heap_block);
+                  new_block->next = curr->next;
+                  new_block->free = 1;
+                  curr->next = new_block;
+                }
+                
+            curr->size = size;
+            curr->free = 0;
+            result = (void*)((char*)curr + sizeof(struct heap_block));
+            break;
+        }
+    }
+    release(&heap.lock);
+    return result;
+}
+
+void free(void *ptr) {
+    if(!ptr)
+        return;
+
+    struct heap_block *block = (struct heap_block*)((char*)ptr - sizeof(struct heap_block));
+    acquire(&heap.lock);
+    block->free = 1;
+    block->size += sizeof(struct heap_block);
+
+    struct heap_block *curr = heap.free_list;
+    while (curr != 0){
+        if (curr->free && curr->next && curr->next->free) {
+            curr->size += curr->next->size + sizeof(struct heap_block);
+            curr->next = curr->next->next;
+        }else{
+            curr = curr->next;
+        }
+    }
+    release(&heap.lock);
+}
+
+void printheap(){
+    acquire(&heap.lock);
+
+    for (struct heap_block *curr = heap.free_list; curr != 0; curr = curr->next) {
+        printf("the heap is  at  %p ,free state is %d,size is %d\n", curr,curr->free,curr->size);
+
+    }
+
+    release(&heap.lock);
+};

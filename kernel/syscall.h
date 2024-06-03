@@ -22,3 +22,4 @@
 #define SYS_close  21
 
 #define SYS_getprocs 22
+#define SYS_heap_demo 23

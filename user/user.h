@@ -24,6 +24,7 @@ int sleep(int);
 int uptime(void);
 
 int getprocs(void);
+int heap_demo(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -110,3 +110,8 @@ getprocs:
  li a7, SYS_getprocs
  ecall
  ret
+.global heap_demo
+heap_demo:
+ li a7, SYS_heap_demo
+ ecall
+ ret

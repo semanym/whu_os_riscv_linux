@@ -64,6 +64,11 @@ void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
 
+void heap_init(void *heap_start, int size);
+void *malloc(int size);
+void free(void *ptr);
+void printheap(void);
+
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);

@@ -38,3 +38,4 @@ entry("sleep");
 entry("uptime");
 
 entry("getprocs");
+entry("heap_demo");

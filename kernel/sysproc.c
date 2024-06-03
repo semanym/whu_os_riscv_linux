@@ -95,3 +95,31 @@ sys_getprocs(void)
 {
   return nproc();
 }
+
+uint64 
+sys_heap_demo(void) {
+    void *a = malloc(100);
+    printf("Allocated 100 bytes at %p\n", a);
+    printheap();
+    void *c = malloc(50);
+    printf("Allocated 50 bytes at %p\n", c);
+    printheap();
+    free(a);
+    printf("Freed 100 bytes from %p\n", a);
+    printheap();
+
+
+
+
+    // free(c);
+    // printf("Freed 50 bytes from %p\n", c);
+    // printheap();
+    void *b = malloc(50);
+    printf("Allocated 50 bytes at %p\n", b);
+    printheap();
+    
+    void *d = malloc(34);
+    printf("Allocated 34 bytes at %p\n", d);
+    printheap();
+    return 0;
+}
